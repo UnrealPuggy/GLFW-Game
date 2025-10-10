@@ -7,7 +7,7 @@ add_embedded () {
     echo -e "#pragma once\n$(xxd -i $1)" >$1.h
 
 }
-add_embedded src/pug.png
+add_embedded src/pug.rgb
 # add_embedded src/pug.png
 x86_64-w64-mingw32-g++ -o main.exe src/main.cpp glad/src/glad.c \
 -static-libstdc++ \
