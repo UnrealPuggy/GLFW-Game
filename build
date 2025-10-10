@@ -1,0 +1,23 @@
+#!/bin/sh
+rm -f main.exe
+# g++ src/main.cpp -o main
+add_embedded () {
+    rm -f $1.h
+    #  > $1.h
+    echo -e "#pragma once\n$(xxd -i $1)" >$1.h
+
+}
+add_embedded src/pug.png
+# add_embedded src/pug.png
+x86_64-w64-mingw32-g++ -o main.exe src/main.cpp \
+-static-libstdc++ \
+-I./glfw/include \
+-L./glfw/lib-mingw-w64 \
+-lglfw3 -lopengl32 -lgdi32 
+
+# 
+if [ -f "main.exe" ]; then
+    ./main.exe
+else
+    echo Could not find main.exe! Something must have gone wrong while compiling
+fi
