@@ -2,19 +2,11 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "pug.png.h"
-
-const char *vertexShaderSource = "#version 330 core\n"
-                                 "layout (location = 0) in vec3 aPos;\n"
-                                 "void main()\n"
-                                 "{\n"
-                                 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-                                 "}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
-                                   "    out vec4 FragColor;\n"
-                                   "void main()\n"
-                                   "{\n"
-                                   "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-                                   "}\0";
+#include "shaders/fragment.glsl.h"
+#include "shaders/vertex.glsl.h"
+#include <cmath>
+const char *vertexShaderSource = (char *)src_shaders_vertex_glsl;
+const char *fragmentShaderSource = (char *)src_shaders_fragment_glsl;
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -39,22 +31,6 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    // glViewport(0, 0, 800, 600);
-    // Image?
-    // GLuint texture;
-    // glGenTextures(1, &texture);
-    // glBindTexture(GL_TEXTURE_2D, texture);
-    // Set wrapping/filtering options
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glad_glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, src_pug_png);
-    /* Loop until the user closes the window asd*/
-
-    //
-    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -85,21 +61,51 @@ int main()
         0, 1, 3, // first Triangle
         1, 2, 3  // second Triangle
     };
-    // Vertex Buffer Object
-    unsigned int VBO, VAO, EBO;
+
+    /**
+     * Vertex Buffer Object, stores the vertex data(positions, texture coords)
+     */
+    unsigned int VBO;
+    /**
+     * (Vertex Array Object) stores how vertex attributes are laid out (the “recipe” for drawing)
+     */
+    unsigned int VAO;
+    /**
+     * (Element Buffer Object) stores indices (which vertices form each triangle)
+     */
+    unsigned int EBO;
+    // * This generates one VAOZ
     glGenVertexArrays(1, &VAO);
+    // * This generates one VBO or EBO
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
+    // * Makes this VAO the current one to record following state.
     glBindVertexArray(VAO);
-    // 2. copy our vertices array in a vertex buffer for OpenGL to use
+
+    // * Binds the VBO — now any vertex-related operations affect it.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // * Uploads vertex data to the GPU.
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // 3. copy our index array in a element buffer for OpenGL to use
+    // * Binds the EBO (for indices).
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    //* Uploads index data.
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    // 4. then set the vertex attributes pointers
+    /**
+    * Tells OpenGL how to read vertex data:
+
+    * 0 → attribute location (matches layout(location=0) in vertex shader)
+
+    * 3 → number of components (x,y,z)
+
+    * GL_FLOAT → type
+
+    * stride → 3 floats apart
+
+    * (void)0* → offset
+    */
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    //* Enables the attribute so it’s actually used by the shader.
     glEnableVertexAttribArray(0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
@@ -107,21 +113,39 @@ int main()
 
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0);
-    // 2. use our shader program when we want to render an object
+    // glBindVertexArray(0);
+
+    // * Enable Wireframe
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
+        //* Sets the background color.
         glClearColor(.1, .1, .1, 1);
+        //* Clears the screen to the set color.
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw our first triangle
+        float timeValue = glfwGetTime();
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        // Tells OpenGL to use your linked vertex+fragment shaders for the next draw.
         glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        //*Binds your geometry definition.
         glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         // glDrawArrays(GL_TRIANGLES, 0, 3);
+        /*
+        Draws the indexed geometry:
+
+        GL_TRIANGLES → draw triangles
+
+        6 → number of indices
+
+        GL_UNSIGNED_INT → type of each index
+
+        0 → offset into the EBO
+        */
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
