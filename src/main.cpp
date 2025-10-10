@@ -16,7 +16,7 @@ int main(void)
         return -1;
     }
 
-    /* Make the window's context current*/
+    /* Make the window's context current asd*/
     glfwMakeContextCurrent(window);
 
     /* Loop until the user closes the window */
