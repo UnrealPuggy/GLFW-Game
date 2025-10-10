@@ -15,7 +15,7 @@ int main(void)
         glfwTerminate();
         return -1;
     }
-
+    // a
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
