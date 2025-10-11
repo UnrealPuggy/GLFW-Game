@@ -127,11 +127,16 @@ int main()
         //* Clears the screen to the set color.
         glClear(GL_COLOR_BUFFER_BIT);
         float timeValue = glfwGetTime();
-        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
-        // Tells OpenGL to use your linked vertex+fragment shaders for the next draw.
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        // Rainbow oscillation using sine waves
+        float r = (sin(timeValue * 2.0f) + 1.0f) / 2.0f;        // 0 -> 1
+        float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f; // phase shift
+        float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
+
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        // glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, r, g, b, 1.0f);
+
         glUseProgram(shaderProgram);
         //*Binds your geometry definition.
         glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
