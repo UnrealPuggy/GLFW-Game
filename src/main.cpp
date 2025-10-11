@@ -1,7 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "pug.png.h"
 #include "shaders/fragment.glsl.h"
 #include "shaders/vertex.glsl.h"
 #include <cmath>

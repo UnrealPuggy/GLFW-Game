@@ -7,7 +7,7 @@ add_embedded () {
     echo -e "#pragma once\n$(xxd -i $1)" >$1.h
 
 }
-add_embedded src/pug.rgb
+# add_embedded src/pug.rgb
 add_embedded src/shaders/fragment.glsl
 add_embedded src/shaders/vertex.glsl
 # add_embedded src/pug.png
