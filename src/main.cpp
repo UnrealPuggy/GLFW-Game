@@ -1,46 +1,69 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
+#include <cstdio>
 #include "shaders/fragment.glsl.h"
 #include "shaders/vertex.glsl.h"
 #include <cmath>
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include <glm/gtc/type_ptr.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include "assets/pug_icon_high_res.jpg.h"
+
 const char *vertexShaderSource = (char *)src_shaders_vertex_glsl;
 const char *fragmentShaderSource = (char *)src_shaders_fragment_glsl;
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+
 int main()
 {
-    // GLFWwindow *window;
-
-    /* Initialize the library */
     if (!glfwInit())
         return -1;
 
-    /* Create a windowed mode window and its OpenGL context */
-    GLFWwindow *window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(640, 480, "CUBE", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
         return -1;
     }
 
-    /* Make the window's context current*/
+    // Set window icon
+    GLFWimage images[1];
+    images[0].pixels = stbi_load_from_memory(
+        src_assets_pug_icon_high_res_jpg,
+        src_assets_pug_icon_high_res_jpg_len,
+        &images[0].width, &images[0].height, 0, 4);
+    if (!images[0].pixels)
+        printf("Image not loaded\n");
+    glfwSetWindowIcon(window, 1, images);
+    stbi_image_free(images[0].pixels);
+
     glfwMakeContextCurrent(window);
-    // glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    // Vertex shader
+    // ----------------- Compile shaders -----------------
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("Vertex shader compilation error: %s\n", infoLog);
+    }
 
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-    // Program
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
@@ -49,127 +72,92 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    glUseProgram(shaderProgram); // Activate shader program before setting uniforms
+
+    // ----------------- Vertex data -----------------
     float vertices[] = {
-        0.5f, 0.5f, 0.0f,   // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f, 0.5f, 0.0f   // top left
+        0.5f, 0.5f, 0.0f,    // top right
+        0.5f, -0.5f, 0.0f,   // bottom right
+        -0.5f, -0.5f, -0.5f, // bottom left
+        -0.5f, 0.5f, 0.0f    // top left
     };
     unsigned int indices[] = {
-        // note that we start from 0!
-        0, 1, 3, // first Triangle
-        1, 2, 3  // second Triangle
-    };
+        0, 1, 3,
+        1, 2, 3};
 
-    /**
-     * Vertex Buffer Object, stores the vertex data(positions, texture coords)
-     */
-    unsigned int VBO;
-    /**
-     * (Vertex Array Object) stores how vertex attributes are laid out (the “recipe” for drawing)
-     */
-    unsigned int VAO;
-    /**
-     * (Element Buffer Object) stores indices (which vertices form each triangle)
-     */
-    unsigned int EBO;
-    // * This generates one VAOZ
+    unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
-    // * This generates one VBO or EBO
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
-    // * Makes this VAO the current one to record following state.
     glBindVertexArray(VAO);
 
-    // * Binds the VBO — now any vertex-related operations affect it.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // * Uploads vertex data to the GPU.
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // * Binds the EBO (for indices).
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //* Uploads index data.
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    /**
-    * Tells OpenGL how to read vertex data:
 
-    * 0 → attribute location (matches layout(location=0) in vertex shader)
+    int posLoc = glGetAttribLocation(shaderProgram, "aPos");
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(posLoc);
 
-    * 3 → number of components (x,y,z)
-
-    * GL_FLOAT → type
-
-    * stride → 3 floats apart
-
-    * (void)0* → offset
-    */
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-    //* Enables the attribute so it’s actually used by the shader.
-    glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glBindVertexArray(0); // usually left bound until rendering
 
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    // glBindVertexArray(0);
+    // ----------------- Uniform matrices -----------------
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+    glm::mat4 view = glm::lookAt(
+        glm::vec3(0.0f, 0.0f, 3.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, glm::radians(2.0f), glm::vec3(0, 1, 0));
 
-    // * Enable Wireframe
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    int modelLoc = glGetUniformLocation(shaderProgram, "model");
+    int viewLoc = glGetUniformLocation(shaderProgram, "view");
+    int projLoc = glGetUniformLocation(shaderProgram, "projection");
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glEnable(GL_DEPTH_TEST); // Enable depth testing
+
+    // ----------------- Render loop -----------------
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
-        //* Sets the background color.
-        glClearColor(.1, .1, .1, 1);
-        //* Clears the screen to the set color.
-        glClear(GL_COLOR_BUFFER_BIT);
-        float timeValue = glfwGetTime();
 
-        // Rainbow oscillation using sine waves
-        float r = (sin(timeValue * 2.0f) + 1.0f) / 2.0f;        // 0 -> 1
-        float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f; // phase shift
+        // Clear screen
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+
+        // Rainbow color
+        float timeValue = glfwGetTime();
+        float r = (sin(timeValue * 2.0f) + 1.0f) / 2.0f;
+        float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
 
         int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        // glUseProgram(shaderProgram);
         glUniform4f(vertexColorLocation, r, g, b, 1.0f);
 
-        glUseProgram(shaderProgram);
-        //*Binds your geometry definition.
-        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
-        /*
-        Draws the indexed geometry:
-
-        GL_TRIANGLES → draw triangles
-
-        6 → number of indices
-
-        GL_UNSIGNED_INT → type of each index
-
-        0 → offset into the EBO
-        */
+        glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        glBindVertexArray(0);
-
-        // glBindVertexArray(0); // no need to unbind it every time
-
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
+
+    // Cleanup
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }

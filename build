@@ -7,16 +7,20 @@ add_embedded () {
     echo -e "#pragma once\n$(xxd -i $1)" >$1.h
 
 }
-# add_embedded src/pug.rgb
+add_embedded src/assets/pug_icon_high_res.jpg
 add_embedded src/shaders/fragment.glsl
 add_embedded src/shaders/vertex.glsl
 # add_embedded src/pug.png
-x86_64-w64-mingw32-g++ -o main.exe src/main.cpp glad/src/glad.c \
+
+# * Icon generator:x86_64-w64-mingw32-windres
+x86_64-w64-mingw32-g++ -o main.exe src/main.cpp glad/src/glad.c icon.o \
 -static-libstdc++ \
 -I./glfw/include \
 -I./glad/include \
+-I./glm \
+-I./stb \
 -L./glfw/lib-mingw-w64 \
--lglfw3 -lopengl32 -lgdi32 
+-lglfw3 -lopengl32 -lgdi32\
 
 # 
 if [ -f "main.exe" ]; then
