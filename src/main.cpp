@@ -20,12 +20,61 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float yaw = -90.0f; // start facing -Z
+float pitch = 0.0f;
+float lastX = 320, lastY = 240;
+float fov = 45.0f;
+void mouse_callback(GLFWwindow *window, double xpos, double ypos)
+{
+    static float lastX = 320, lastY = 240;
+    static bool firstMouse = true;
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed: y goes from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.2f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
+}
+
 int main()
 {
     if (!glfwInit())
         return -1;
 
+    // Enable Anti Aliasing
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
     GLFWwindow *window = glfwCreateWindow(640, 480, "CUBE", NULL, NULL);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (!window)
     {
         glfwTerminate();
@@ -76,14 +125,38 @@ int main()
 
     // ----------------- Vertex data -----------------
     float vertices[] = {
-        0.5f, 0.5f, 0.0f,    // top right
-        0.5f, -0.5f, 0.0f,   // bottom right
-        -0.5f, -0.5f, -0.5f, // bottom left
-        -0.5f, 0.5f, 0.0f    // top left
+        // Front face
+        -0.5f, -0.5f, 0.5f, // 0: bottom-left
+        0.5f, -0.5f, 0.5f,  // 1: bottom-right
+        0.5f, 0.5f, 0.5f,   // 2: top-right
+        -0.5f, 0.5f, 0.5f,  // 3: top-left
+        // Back face
+        -0.5f, -0.5f, -0.5f, // 4: bottom-left
+        0.5f, -0.5f, -0.5f,  // 5: bottom-right
+        0.5f, 0.5f, -0.5f,   // 6: top-right
+        -0.5f, 0.5f, -0.5f   // 7: top-left
     };
+
+    // ----------------- Indices -----------------
     unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3};
+        // Front face
+        0, 1, 2,
+        2, 3, 0,
+        // Right face
+        1, 5, 6,
+        6, 2, 1,
+        // Back face
+        5, 4, 7,
+        7, 6, 5,
+        // Left face
+        4, 0, 3,
+        3, 7, 4,
+        // Top face
+        3, 2, 6,
+        6, 7, 3,
+        // Bottom face
+        4, 5, 1,
+        1, 0, 4};
 
     unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -105,23 +178,6 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // glBindVertexArray(0); // usually left bound until rendering
 
-    // ----------------- Uniform matrices -----------------
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
-    glm::mat4 view = glm::lookAt(
-        glm::vec3(0.0f, 0.0f, 3.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, glm::radians(2.0f), glm::vec3(0, 1, 0));
-
-    int modelLoc = glGetUniformLocation(shaderProgram, "model");
-    int viewLoc = glGetUniformLocation(shaderProgram, "view");
-    int projLoc = glGetUniformLocation(shaderProgram, "projection");
-
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
     glEnable(GL_DEPTH_TEST); // Enable depth testing
 
     // ----------------- Render loop -----------------
@@ -142,11 +198,45 @@ int main()
         float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
 
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUniform4f(vertexColorLocation, r, g, b, 1.0f);
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "time");
+        glUniform1f(vertexColorLocation, glfwGetTime());
+        // glUniform4f(vertexColorLocation, r, g, b, 1.0f);
+
+        float cameraSpeed = 2.5f * 1.0f / 60 * (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ? 2 : 1); // deltaTime = frame time
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            cameraPos += cameraSpeed * cameraFront;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            cameraPos += cameraSpeed * cameraUp;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            cameraPos -= cameraSpeed * cameraUp;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            cameraPos -= cameraSpeed * cameraFront;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+        // ----------------- Uniform matrices -----------------
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+        float radius = 3.0f;            // distance from the rectangle
+        float camAngle = glfwGetTime(); // rotate over time
+        float camX = sin(camAngle) * radius;
+        float camZ = cos(camAngle) * radius;
+        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(2.0f), glm::vec3(0, 1, 0));
+
+        int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        int projLoc = glGetUniformLocation(shaderProgram, "projection");
+
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
