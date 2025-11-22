@@ -14,6 +14,7 @@
 
 const char *vertexShaderSource = (char *)src_shaders_vertex_glsl;
 const char *fragmentShaderSource = (char *)src_shaders_fragment_glsl;
+bool mouseCaptured = true;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -30,7 +31,8 @@ float lastX = 320, lastY = 240;
 float fov = 45.0f;
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    static float lastX = 320, lastY = 240;
+    if (!mouseCaptured)
+        return;
     static bool firstMouse = true;
     if (firstMouse)
     {
@@ -74,6 +76,7 @@ int main()
     GLFWwindow *window = glfwCreateWindow(640, 480, "CUBE", NULL, NULL);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (!window)
     {
@@ -183,8 +186,20 @@ int main()
     // ----------------- Render loop -----------------
     while (!glfwWindowShouldClose(window))
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !mouseCaptured)
+        {
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            lastX = (float)xpos;
+            lastY = (float)ypos;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide and capture mouse
+            mouseCaptured = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && mouseCaptured)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // release mouse
+            mouseCaptured = false;
+        }
 
         // Clear screen
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -203,21 +218,28 @@ int main()
         // glUniform4f(vertexColorLocation, r, g, b, 1.0f);
 
         float cameraSpeed = 2.5f * 1.0f / 60 * (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ? 2 : 1); // deltaTime = frame time
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            cameraPos += cameraSpeed * cameraFront;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            cameraPos += cameraSpeed * cameraUp;
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-            cameraPos -= cameraSpeed * cameraUp;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            cameraPos -= cameraSpeed * cameraFront;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+        if (mouseCaptured)
+        {
+
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+                cameraPos += cameraSpeed * cameraFront;
+            if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+                cameraPos += cameraSpeed * cameraUp;
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                cameraPos -= cameraSpeed * cameraUp;
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+                cameraPos -= cameraSpeed * cameraFront;
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+                cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+                cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        }
 
         // ----------------- Uniform matrices -----------------
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), width / (float)height, 0.1f, 100.0f);
         float radius = 3.0f;            // distance from the rectangle
         float camAngle = glfwGetTime(); // rotate over time
         float camX = sin(camAngle) * radius;
