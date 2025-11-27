@@ -163,6 +163,7 @@ int main()
         1, 0, 4};
 
     unsigned int VAO, VBO, EBO;
+    // This gens the unique ID
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -213,7 +214,7 @@ int main()
         float timeValue = glfwGetTime();
         float dt = timeValue - lastTime;
         lastTime = timeValue;
-        printf("%f\n", 1 / dt);
+        // printf("%f\n", 1 / dt);
         float r = (sin(timeValue * 2.0f) + 1.0f) / 2.0f;
         float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
@@ -251,7 +252,9 @@ int main()
         float camZ = cos(camAngle) * radius;
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-        glm::mat4 model = glm::mat4(10.0f);
+        glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
+
         // model = glm::rotate(model, glm::radians(20.0f), glm::vec3(0, 1, 0));
 
         int modelLoc = glGetUniformLocation(shaderProgram, "model");
