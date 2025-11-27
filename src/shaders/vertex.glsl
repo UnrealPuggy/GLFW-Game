@@ -8,7 +8,9 @@ uniform mat4 projection;
 uniform float time;
 void main()
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor
+    vec3 pos = aPos;
+    pos.y *= sin(time +aPos.x*5.0+ aPos.z*7.0);
+    gl_Position = projection * view * model * vec4(pos, 1.0); // see how we directly give a vec3 to vec4's constructor
     // vertexPos = aPos;
 
     //  ----- Time Version -------

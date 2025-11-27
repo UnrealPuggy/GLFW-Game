@@ -72,6 +72,7 @@ int main()
 
     // Enable Anti Aliasing
     glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_MAXIMIZED, true); // Request maximized window
 
     GLFWwindow *window = glfwCreateWindow(640, 480, "CUBE", NULL, NULL);
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -182,6 +183,7 @@ int main()
     // glBindVertexArray(0); // usually left bound until rendering
 
     glEnable(GL_DEPTH_TEST); // Enable depth testing
+    static float lastTime = -1 / 60.0f;
 
     // ----------------- Render loop -----------------
     while (!glfwWindowShouldClose(window))
@@ -209,6 +211,9 @@ int main()
 
         // Rainbow color
         float timeValue = glfwGetTime();
+        float dt = timeValue - lastTime;
+        lastTime = timeValue;
+        printf("%f\n", 1 / dt);
         float r = (sin(timeValue * 2.0f) + 1.0f) / 2.0f;
         float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
@@ -246,8 +251,8 @@ int main()
         float camZ = cos(camAngle) * radius;
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(2.0f), glm::vec3(0, 1, 0));
+        glm::mat4 model = glm::mat4(10.0f);
+        // model = glm::rotate(model, glm::radians(20.0f), glm::vec3(0, 1, 0));
 
         int modelLoc = glGetUniformLocation(shaderProgram, "model");
         int viewLoc = glGetUniformLocation(shaderProgram, "view");
