@@ -1,14 +1,14 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+// #include <glad/glad.h>
+// #include <GLFW/glfw3.h>
 #include <cstdio>
 #include "shaders/fragment.glsl.h"
 #include "shaders/vertex.glsl.h"
 #include <cmath>
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include <glm/gtc/type_ptr.hpp>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "libs/common.hpp"
+// #include "libs/glm/glm/glm.hpp"
+// #include "glm/gtc/matrix_transform.hpp"
+// #include <glm/gtc/type_ptr.hpp>
+// #include "stb_image.h"
 
 #include "assets/pug_icon_high_res.jpg.h"
 
@@ -108,6 +108,7 @@ int main()
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
+
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
         printf("Vertex shader compilation error: %s\n", infoLog);
     }
