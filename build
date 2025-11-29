@@ -13,13 +13,13 @@ add_embedded src/shaders/vertex.glsl
 # add_embedded src/pug.png
 
 # * Icon generator:x86_64-w64-mingw32-windres
-x86_64-w64-mingw32-g++ -o main.exe src/main.cpp glad/src/glad.c icon.o \
+x86_64-w64-mingw32-g++ -o main.exe src/main.cpp libs/glad/src/glad.c icon.o \
 -static-libstdc++ \
--I./glfw/include \
--I./glad/include \
--I./glm \
--I./stb \
--L./glfw/lib-mingw-w64 \
+-I./libs/glfw/include \
+-I./libs/glad/include \
+-I./libs/glm \
+-I./libs/stb \
+-L./libs/glfw/lib-mingw-w64 \
 -lglfw3 -lopengl32 -lgdi32\
 
 # 
