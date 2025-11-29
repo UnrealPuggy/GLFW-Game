@@ -1,10 +1,12 @@
 #pragma once
-class Shader
+struct Shader
 {
     unsigned int shaderProgram;
     unsigned int fragmentShader;
     unsigned int vertexShader;
 
-public:
     Shader(const char *vs, const char *fs);
+    void use();
+    int getUniformLocation(const char *name);
+    int getAttribLocation(const char *name);
 };

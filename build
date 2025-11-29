@@ -14,7 +14,7 @@ add_embedded src/shaders/vertex.glsl
 
 # * Icon generator:x86_64-w64-mingw32-windres
 
-x86_64-w64-mingw32-g++ -o main.exe src/main.cpp libs/glad/src/glad.c icon.o \
+x86_64-w64-mingw32-g++ -o main.exe src/main.cpp src/Shader.cpp libs/glad/src/glad.c icon.o \
 -static-libstdc++ \
 -I. \
 -L./libs/glfw/lib-mingw-w64 \

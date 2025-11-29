@@ -4,7 +4,12 @@
 #include "shaders/fragment.glsl.h"
 #include "shaders/vertex.glsl.h"
 #include <cmath>
+
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "libs/common.hpp"
+
+#include "Shader.hpp"
 // #include "libs/glm/glm/glm.hpp"
 // #include "glm/gtc/matrix_transform.hpp"
 // #include <glm/gtc/type_ptr.hpp>
@@ -98,34 +103,7 @@ int main()
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    // ----------------- Compile shaders -----------------
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("Vertex shader compilation error: %s\n", infoLog);
-    }
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    glUseProgram(shaderProgram); // Activate shader program before setting uniforms
+    Shader test("src/shaders/vertex.glsl", "src/shaders/fragment.glsl");
 
     // ----------------- Vertex data -----------------
     float vertices[] = {
@@ -174,7 +152,7 @@ int main()
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    int posLoc = glGetAttribLocation(shaderProgram, "aPos");
+    int posLoc = test.getAttribLocation("aPos"); // glGetAttribLocation(test.shaderProgram, "aPos");
     glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(posLoc);
 
@@ -207,7 +185,8 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        test.use();
+        // glUseProgram(shaderProgram);
 
         // Rainbow color
         float timeValue = glfwGetTime();
@@ -218,7 +197,7 @@ int main()
         float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
 
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "time");
+        int vertexColorLocation = test.getUniformLocation("time"); // glGetUniformLocation(test.shaderProgram, "time");
         glUniform1f(vertexColorLocation, glfwGetTime());
         // glUniform4f(vertexColorLocation, r, g, b, 1.0f);
 
@@ -256,9 +235,9 @@ int main()
 
         // model = glm::rotate(model, glm::radians(20.0f), glm::vec3(0, 1, 0));
 
-        int modelLoc = glGetUniformLocation(shaderProgram, "model");
-        int viewLoc = glGetUniformLocation(shaderProgram, "view");
-        int projLoc = glGetUniformLocation(shaderProgram, "projection");
+        int modelLoc = test.getUniformLocation("model");     // glGetUniformLocation(test.shaderProgram, "model");
+        int viewLoc = test.getUniformLocation("view");       // glGetUniformLocation(test.shaderProgram, "view");
+        int projLoc = test.getUniformLocation("projection"); // glGetUniformLocation(test.shaderProgram, "projection");
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -275,7 +254,7 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
+    glDeleteProgram(test.shaderProgram);
 
     glfwTerminate();
     return 0;

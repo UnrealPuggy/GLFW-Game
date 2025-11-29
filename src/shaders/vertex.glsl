@@ -10,7 +10,7 @@ void main()
 {
     vec3 pos = aPos;
     // pos.y *= sin(time +aPos.x*5.0+ aPos.z*7.0);
-    // float r =  (aPos.x*aPos.x)+(aPos.z*aPos.z);
+    float r =  (aPos.x*aPos.x)+(aPos.z*aPos.z);
     pos.y += sin(pos.x+pos.z + time * 2)/4;
     // pos.y -=r/32;
     gl_Position = projection * view * model * vec4(pos, 1.0); // see how we directly give a vec3 to vec4's constructor
