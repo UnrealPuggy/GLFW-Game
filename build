@@ -1,5 +1,6 @@
 #!/bin/sh
 rm -f main.exe
+rm -rf run
 # g++ src/main.cpp -o main
 add_embedded () {
     rm -f $1.h
@@ -10,6 +11,7 @@ add_embedded () {
 add_embedded src/assets/pug_icon_high_res.jpg
 add_embedded src/shaders/fragment.glsl
 add_embedded src/shaders/vertex.glsl
+add_embedded src/pug.png
 # add_embedded src/pug.png
 
 # * Icon generator:x86_64-w64-mingw32-windres
@@ -30,8 +32,11 @@ x86_64-w64-mingw32-g++ -o main.exe src/main.cpp src/Shader.cpp libs/glad/src/gla
 # -lglfw3 -lopengl32 -lgdi32\
 
 # 
+mkdir run
 if [ -f "main.exe" ]; then
-    ./main.exe
+    # ./main.exe
+
+    pushd run && ../main.exe ; popd
 else
     echo Could not find main.exe! Something must have gone wrong while compiling
 fi

@@ -8,8 +8,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "libs/common.hpp"
-
+#include <fstream>
+#include <filesystem>
+#include "pug.png.h"
 #include "Shader.hpp"
+
 // #include "libs/glm/glm/glm.hpp"
 // #include "glm/gtc/matrix_transform.hpp"
 // #include <glm/gtc/type_ptr.hpp>
@@ -69,9 +72,31 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
 }
+void doFile(const char *realPath, const char *src, int size)
+{
+    std::filesystem::path filePath(realPath);
+
+    // Create directories leading to the file
+    std::filesystem::create_directories(filePath.parent_path());
+
+    std::ofstream out(filePath, std::ios::binary);
+    if (!out)
+    {
+        printf("Failed to open file for writing!\n");
+        return;
+    }
+
+    out.write(src, size);
+    out.close();
+}
 
 int main()
 {
+
+    // Put the extracted files Here
+    doFile("cube123/src/shaders/fragment.glsl", fragmentShaderSource, src_shaders_fragment_glsl_len);
+    doFile("cube123/src/shaders/vertex.glsl", vertexShaderSource, src_shaders_vertex_glsl_len);
+    doFile("cube123/src/pug.png", (char *)src_pug_png, src_pug_png_len);
     if (!glfwInit())
         return -1;
 
@@ -103,7 +128,7 @@ int main()
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    Shader myShader("src/shaders/vertex.glsl", "src/shaders/fragment.glsl");
+    Shader myShader("cube123/src/shaders/vertex.glsl", "cube123/src/shaders/fragment.glsl");
 
     // ----------------- Vertex data -----------------
     // Vertices with uV
@@ -177,7 +202,7 @@ int main()
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("funny.png", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("cube123/src/pug.png", &width, &height, &nrChannels, 0);
 
     if (data)
     {
@@ -217,7 +242,7 @@ int main()
 
     glEnable(GL_DEPTH_TEST); // Enable depth testing
     static float lastTime = -1 / 60.0f;
-
+    glm::mat4 model = glm::mat4(1.0f);
     // ----------------- Render loop -----------------
     while (!glfwWindowShouldClose(window))
     {
@@ -288,10 +313,9 @@ int main()
         float camZ = cos(camAngle) * radius;
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-        glm::mat4 model = glm::mat4(1.0f);
         // model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
 
-        // model = glm::rotate(model, glm::radians(20.0f), glm::vec3(0, 1, 0));
+        model = glm::rotate(model, glm::radians(90.0f * dt), glm::vec3(1, 1, 1));
 
         int modelLoc = myShader.getUniformLocation("model");     // glGetUniformLocation(test.shaderProgram, "model");
         int viewLoc = myShader.getUniformLocation("view");       // glGetUniformLocation(test.shaderProgram, "view");
@@ -313,7 +337,7 @@ int main()
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
     glDeleteProgram(myShader.shaderProgram);
-
+    std::filesystem::remove_all("cube123");
     glfwTerminate();
     return 0;
 }
