@@ -103,42 +103,93 @@ int main()
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    Shader test("src/shaders/vertex.glsl", "src/shaders/fragment.glsl");
+    Shader myShader("src/shaders/vertex.glsl", "src/shaders/fragment.glsl");
 
     // ----------------- Vertex data -----------------
+    // Vertices with uV
     float vertices[] = {
         // Front face
-        -0.5f, -0.5f, 0.5f, // 0: bottom-left
-        0.5f, -0.5f, 0.5f,  // 1: bottom-right
-        0.5f, 0.5f, 0.5f,   // 2: top-right
-        -0.5f, 0.5f, 0.5f,  // 3: top-left
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
         // Back face
-        -0.5f, -0.5f, -0.5f, // 4: bottom-left
-        0.5f, -0.5f, -0.5f,  // 5: bottom-right
-        0.5f, 0.5f, -0.5f,   // 6: top-right
-        -0.5f, 0.5f, -0.5f   // 7: top-left
-    };
+        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        // Left face
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        // Right face
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+        // Top face
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        // Bottom face
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f};
+
+    // Old Vertices
+    // float vertices[] = {
+    //     // Front face
+    //     -0.5f, -0.5f, 0.5f, // 0: bottom-left
+    //     0.5f, -0.5f, 0.5f,  // 1: bottom-right
+    //     0.5f, 0.5f, 0.5f,   // 2: top-right
+    //     -0.5f, 0.5f, 0.5f,  // 3: top-left
+    //     // Back face
+    //     -0.5f, -0.5f, -0.5f, // 4: bottom-left
+    //     0.5f, -0.5f, -0.5f,  // 5: bottom-right
+    //     0.5f, 0.5f, -0.5f,   // 6: top-right
+    //     -0.5f, 0.5f, -0.5f   // 7: top-left
+    // };
 
     // ----------------- Indices -----------------
+
     unsigned int indices[] = {
-        // Front face
-        0, 1, 2,
-        2, 3, 0,
-        // Right face
-        1, 5, 6,
-        6, 2, 1,
-        // Back face
-        5, 4, 7,
-        7, 6, 5,
-        // Left face
-        4, 0, 3,
-        3, 7, 4,
-        // Top face
-        3, 2, 6,
-        6, 7, 3,
-        // Bottom face
-        4, 5, 1,
-        1, 0, 4};
+        0, 1, 2, 2, 3, 0,       // Front
+        4, 5, 6, 6, 7, 4,       // Back
+        8, 9, 10, 10, 11, 8,    // Left
+        12, 13, 14, 14, 15, 12, // Right
+        16, 17, 18, 18, 19, 16, // Top
+        20, 21, 22, 22, 23, 20  // Bottom
+    };
+
+    // Texture
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // Set wrapping/filtering options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load("funny.png", &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+                     nrChannels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printf("Failed to load texture\n");
+    }
+    stbi_image_free(data);
 
     unsigned int VAO, VBO, EBO;
     // This gens the unique ID
@@ -152,9 +203,13 @@ int main()
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    int posLoc = test.getAttribLocation("aPos"); // glGetAttribLocation(test.shaderProgram, "aPos");
-    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    int posLoc = myShader.getAttribLocation("aPos"); // glGetAttribLocation(test.shaderProgram, "aPos");
+    int uvLoc = myShader.getAttribLocation("aUV");
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
     glEnableVertexAttribArray(posLoc);
+
+    glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(uvLoc);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -185,7 +240,10 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        test.use();
+        myShader.use();
+        glActiveTexture(GL_TEXTURE0); // activate texture unit 0
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(myShader.getUniformLocation("texture1"), 0);
         // glUseProgram(shaderProgram);
 
         // Rainbow color
@@ -197,7 +255,7 @@ int main()
         float g = (sin(timeValue * 2.0f + 2.0f) + 1.0f) / 2.0f;
         float b = (sin(timeValue * 2.0f + 4.0f) + 1.0f) / 2.0f;
 
-        int vertexColorLocation = test.getUniformLocation("time"); // glGetUniformLocation(test.shaderProgram, "time");
+        int vertexColorLocation = myShader.getUniformLocation("time"); // glGetUniformLocation(test.shaderProgram, "time");
         glUniform1f(vertexColorLocation, glfwGetTime());
         // glUniform4f(vertexColorLocation, r, g, b, 1.0f);
 
@@ -235,9 +293,9 @@ int main()
 
         // model = glm::rotate(model, glm::radians(20.0f), glm::vec3(0, 1, 0));
 
-        int modelLoc = test.getUniformLocation("model");     // glGetUniformLocation(test.shaderProgram, "model");
-        int viewLoc = test.getUniformLocation("view");       // glGetUniformLocation(test.shaderProgram, "view");
-        int projLoc = test.getUniformLocation("projection"); // glGetUniformLocation(test.shaderProgram, "projection");
+        int modelLoc = myShader.getUniformLocation("model");     // glGetUniformLocation(test.shaderProgram, "model");
+        int viewLoc = myShader.getUniformLocation("view");       // glGetUniformLocation(test.shaderProgram, "view");
+        int projLoc = myShader.getUniformLocation("projection"); // glGetUniformLocation(test.shaderProgram, "projection");
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -254,7 +312,7 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-    glDeleteProgram(test.shaderProgram);
+    glDeleteProgram(myShader.shaderProgram);
 
     glfwTerminate();
     return 0;
